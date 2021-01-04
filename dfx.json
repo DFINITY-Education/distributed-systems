@@ -1,0 +1,40 @@
+{
+  "canisters": {
+    "distributed_systems": {
+      "main": "src/Main.mo",
+      "type": "motoko"
+    },
+    "distributed_systems_assets": {
+      "dependencies": [
+        "distributed_systems"
+      ],
+      "frontend": {
+        "entrypoint": "frontend/index.jsx"
+      },
+      "source": [
+        "frontend/assets",
+        "dist/distributed_systems_assets/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": ""
+    }
+  },
+  "dfx": "0.6.14",
+  "networks": {
+    "ic": {
+      "providers": [
+        "https://gw.dfinity.network"
+      ],
+      "type": "persistent"
+    },
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
+}
