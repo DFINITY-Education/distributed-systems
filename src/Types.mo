@@ -8,6 +8,21 @@ module {
   public type UserId = Principal;
   public type Result = Result.Result<(), Error>;
 
+  public type Action = {
+    #makeBid: (bidder: Principal, auctionId: Nat, amount: Nat);
+    #startAuction: (
+      owner: UserId,
+      name: Text,
+      description: Text,
+      url: Text
+    );
+  };
+
+  public type Msg = {
+    seq: Nat;
+    action: Action;
+  };
+
   public type Auction = {
     owner: UserId;
     item: Item;

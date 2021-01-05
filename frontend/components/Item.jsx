@@ -5,7 +5,7 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 
-import web_development from 'ic:canisters/web_development';
+import distributed_systems from 'ic:canisters/distributed_systems';
 
 /** Bids on an existing auction in the App canister. */
 async function bidOnAuction() {

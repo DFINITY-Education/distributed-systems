@@ -11,6 +11,7 @@ import Types "./Types";
 
 actor class App(balancesAddr: Principal) = App {
 
+  type Action = Types.Action;
   type Auction = Types.Auction;
   type AuctionId = Types.AuctionId;
   type Item = Types.Item;
@@ -22,10 +23,18 @@ actor class App(balancesAddr: Principal) = App {
   let auctions = HashMap.HashMap<AuctionId, Auction>(1, Nat.equal, Hash.hash);
   var auctionCounter = 0;
 
+  // dummy
+  public query func getSeq(user: UserId) : async (Nat) {
+    0
+  };
+
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
     let entries = auctions.entries();
     Iter.toArray<(AuctionId, Auction)>(entries)
   };
+
+  // dummy
+  public shared(caller) func sendMessage(seq: Nat, action: Action) : async () {};
 
   /// Creates a new item and corresponding auction.
   /// Args:
@@ -33,7 +42,7 @@ actor class App(balancesAddr: Principal) = App {
   ///   |name|         The item's name.
   ///   |description|  The item's description.
   ///   |url|          The URL the auction can be accesses at.
-  public func auctionItem(
+  public func startAuction(
     owner: UserId,
     name: Text,
     description: Text,
@@ -83,7 +92,7 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
-  /// Helper method used to create a new item (used in auctionItem).
+  /// Helper method used to create a new item (used in startAuction).
   /// Args:
   ///   |_name|         The item's name.
   ///   |_description|  The item's description.
@@ -98,7 +107,7 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
-  /// Helper method used to create a new item (used in auctionItem).
+  /// Helper method used to create a new item (used in startAuction).
   /// Args:
   ///   |_owner|         The auction's owner.
   ///   |_item|          The item object.

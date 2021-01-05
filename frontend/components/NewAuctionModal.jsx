@@ -5,7 +5,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Modal from "react-bootstrap/Modal";
 
-import web_development from 'ic:canisters/web_development';
+import distributed_systems from 'ic:canisters/distributed_systems';
 
 /** Puts a new item up for auction in the App canister. */
 async function addAuction() {
