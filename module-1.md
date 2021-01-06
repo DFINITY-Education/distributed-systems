@@ -24,7 +24,7 @@ We achieve the aforementioned distribution transparency through the [**Network N
 The NNS can add as many subsets as are needed to increase system capacity. Importantly, canisters hosted on different subnets can still communicate with each other, and this process is abstracted away for end users.
 
 <p align="center">
-  <img height="400" src="/Users/csol/Documents/Programming/Dfinity/distributed systems (not github)/images/nns-subnets.png">
+  <img height="400" src="/images/nns-subnets.png">
 </p>
 
 ### Replication and Consensus
@@ -48,7 +48,7 @@ Imagine, for instance, that there are two nodes, A and B (pictured below), and n
 If we know the relative times that each message was sent and received (T1-T4), and we assume that sending a message from A to B takes the same amount of time as sending a message from B to A, then we can calculate the difference in internal clock times between A and B.
 
 <p align="center">
-  <img height="350" src="/Users/csol/Documents/Programming/Dfinity/distributed systems (not github)/images/Time-sync.png">
+  <img height="350" src="/images/Time-sync.png">
 </p>
 
 *M. van Steen and A.S. Tanenbaum, Distributed Systems, 3rd ed., distributed-systems.net, 2017.*
@@ -64,7 +64,7 @@ In a distributed system like the one seen below, we require some notion of **eve
 
 
 <p align="center">
-  <img height="250" src="/Users/csol/Documents/Programming/Dfinity/distributed systems (not github)/images/event-order.png">
+  <img height="250" src="/images/event-order.png">
 </p>
 
 ### Logical Clocks
