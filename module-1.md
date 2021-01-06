@@ -1,6 +1,6 @@
 # Module 1: Intro to Distributed Systems
 
-This module provides an overview of how distributed systems form the core of the Internet Computer followed by an explanation of distributed time.
+This module provides an overview of distributed systems, their role in the Internet Computer, and an explanation of distributed time.
 
 ## Outline
 
