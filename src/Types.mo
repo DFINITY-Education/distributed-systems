@@ -29,6 +29,8 @@ module {
     highestBid: Nat;
     highestBidder: ?UserId;
     ttl: Int;
+    lock: UserId;
+    lock_ttl: Int;
   };
 
   public type Item = {
@@ -58,6 +60,8 @@ module {
     #insufficientBalance;
     #auctionNotFound;
     #userNotFound;
+    #lockNotAcquired;
+    #highestBidderNotPermitted;
   };
 
   public type Vote = {

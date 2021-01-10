@@ -23,18 +23,10 @@ actor class App(balancesAddr: Principal) = App {
   let auctions = HashMap.HashMap<AuctionId, Auction>(1, Nat.equal, Hash.hash);
   var auctionCounter = 0;
 
-  // dummy
-  public query func getSeq(user: UserId) : async (Nat) {
-    0
-  };
-
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
     let entries = auctions.entries();
     Iter.toArray<(AuctionId, Auction)>(entries)
   };
-
-  // dummy
-  public shared(caller) func sendMessage(seq: Nat, action: Action) : async () {};
 
   /// Creates a new item and corresponding auction.
   /// Args:
@@ -60,17 +52,22 @@ actor class App(balancesAddr: Principal) = App {
   ///   |auctionId|  The id of the auction.
   ///   |amount|     The user's bit amount.
   /// Returns:
-  ///   A Result indicating if the bid was successfully processed (see "Error" in Types.mo for possible errors).
-  public func makeBid(bidder: Principal, auctionId: Nat, amount: Nat) : async (Result) {
+  ///   A Result indicating if the bid was successfully processed
+  ///   (see "Error" in Types.mo for possible errors).
+  public shared(msg) func makeBid(
+    bidder: Principal,
+    auctionId: Nat,
+    amount: Nat
+  ) : async (Result) {
     let balance = await balances.getBalance(bidder);
     if (amount > balance) return #err(#insufficientBalance);
 
-    let auctionCheck = auctions.get(auctionId);
-    switch (auctionCheck) {
+    switch (auctions.get(auctionId)) {
       case (null) {
         #err(#auctionNotFound)
       };
       case (?auction) {
+        if (auction.lock != msg.caller) return #err(#lockNotAcquired);
         switch (auction.highestBidder) {
           case (null) {
             auctions.put(auctionId, setNewBidder(auction, amount, bidder));
@@ -80,7 +77,11 @@ actor class App(balancesAddr: Principal) = App {
             if (amount > auction.highestBid) {
               let myPrincipal = Principal.fromActor(App);
               ignore balances.transfer(bidder, myPrincipal, amount);
-              ignore balances.transfer(myPrincipal, previousHighestBidder, auction.highestBid);
+              ignore balances.transfer(
+                myPrincipal,
+                previousHighestBidder,
+                auction.highestBid
+              );
               auctions.put(auctionId, setNewBidder(auction, amount, bidder));
               #ok()
             } else {
@@ -91,6 +92,62 @@ actor class App(balancesAddr: Principal) = App {
       };
     }
   };
+
+  ////////////////////////
+  // MODULE 2 EXERCISES //
+  ////////////////////////
+
+  public shared(msg) func acquireLock(id: AuctionId) : async (Result) {
+    switch (auctions.get(id)) {
+      case (null) {
+        #err(#auctionNotFound)
+      };
+      case (?auction) {
+        // Current highest bidder cannot acquire the lock to stall
+        if (msg.caller == auction.highestBidder) {
+          #err(#highestBidderNotPermitted)
+        } else if (Time.now() > auction.lock_ttl) {
+          auctions.put(auctionId, setNewLock(auction, msg.caller));
+          #ok()
+        } else {
+          #err(#lockNotAcquired)
+        }
+      };
+    }
+  };
+
+  ////////////////////////
+  // MODULE 3 EXERCISES //
+  ////////////////////////
+
+  public shared(msg) func sendMessage(seq: Nat, action: Action) : async () {
+    if (msg.seq >= getSeq(msg.caller)) {
+      // queue up the message
+    } // otherwise ignore
+    processMessages();
+  };
+
+  func processMessages(msg: Message) {
+    switch (msg) {
+      case (#makeBid) {
+        ...
+      };
+      case (#startAuction) {
+        ...
+      };
+    }
+  };
+
+  ////////////////////////
+  // MODULE 4 EXERCISES //
+  ////////////////////////
+
+  public func sendMessageWithHashing() {}
+
+
+  ////////////////////////
+  //   HELPER METHODS   //
+  ////////////////////////
 
   /// Helper method used to create a new item (used in startAuction).
   /// Args:
@@ -124,6 +181,20 @@ actor class App(balancesAddr: Principal) = App {
       highestBid = 0;
       highestBidder = null;
       ttl = Time.now() + (3600 * 1000_000_000);
+      lock = _owner;
+      lock_ttl = 0;
+    }
+  };
+
+  func setNewLock(auction: Auction, lockAcquirer: UserId) : (Auction) {
+    {
+      owner = auction.owner;
+      item = auction.item;
+      highestBid = auction.highestBid;
+      highestBidder = auction.highestBidder;
+      ttl = auction.ttl;
+      lock = lockAcquirer;
+      lock_ttl = Time.now() + (3600 * 1000_000);
     }
   };
 
@@ -141,6 +212,8 @@ actor class App(balancesAddr: Principal) = App {
       highestBid = bid;
       highestBidder = ?bidder;
       ttl = auction.ttl;
+      lock = auction.lock;
+      lock_ttl = auction.lock_ttl;
     }
   };
 

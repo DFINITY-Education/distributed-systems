@@ -5,11 +5,11 @@ import Balances "./Balances";
 import Governor "./Governor";
 import Types "./Types";
 
-actor class Bidder(govAddr: Principal, balancesAddr: Principal) = Bidder {
+actor class User(govAddr: Principal, balancesAddr: Principal) = User {
 
   type Action = Types.Action;
 
-  let me = Principal.fromActor(Bidder);
+  let me = Principal.fromActor(User);
   let balances = actor (Principal.toText(balancesAddr)) : Balances.Balances;
   let governor = actor (Principal.toText(govAddr)) : Governor.Governor;
 

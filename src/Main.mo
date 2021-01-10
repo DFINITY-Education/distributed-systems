@@ -6,7 +6,7 @@ import Result "mo:base/Result";
 
 import App "./App";
 import Balances "./Balances";
-import Bidder "./Bidder";
+import User "./User";
 import Governor "./Governor";
 import Types "./Types";
 
@@ -16,7 +16,7 @@ actor {
 
   type App = App.App;
   type Balances = Balances.Balances;
-  type Bidder = Bidder.Bidder;
+  type User = User.User;
   type Governor = Governor.Governor;
   type GovError = Types.GovError;
   type AuctionId = Types.AuctionId;
@@ -25,9 +25,9 @@ actor {
   var app : ?App = null;
   var balances : ?Balances = null;
   var governor : ?Governor = null;
-  var bidder1 : ?Bidder = null;
-  var bidder2 : ?Bidder = null;
-  var bidder3 : ?Bidder = null;
+  var User1 : ?User = null;
+  var User2 : ?User = null;
+  var User3 : ?User = null;
 
   // Performs initial setup operations by instantiating the Balances, App, and Governor canisters
   public shared(msg) func deployBalances() : async () {
@@ -69,15 +69,15 @@ actor {
     }
   };
 
-  public func deployBidders() : async () {
-    switch (bidder1, bidder2, bidder3, governor, balances) {
+  public func deployUsers() : async () {
+    switch (user1, user2, user3, governor, balances) {
       case (?b1, _, _, _, _) Debug.print("Already deployed");
       case (_, _, _, null, _) Debug.print("Should call deployGovernor() first");
       case (_, _, _, _, null) Debug.print("Should call deployBalances() first");
       case (_, _, _, ?gov, ?bal) {
-        bidder1 := ?(await Bidder.Bidder(Principal.fromActor(gov), Principal.fromActor(bal)));
-        bidder2 := ?(await Bidder.Bidder(Principal.fromActor(gov), Principal.fromActor(bal)));
-        bidder3 := ?(await Bidder.Bidder(Principal.fromActor(gov), Principal.fromActor(bal)));
+        user1 := ?(await User.User(Principal.fromActor(gov), Principal.fromActor(bal)));
+        user2 := ?(await User.User(Principal.fromActor(gov), Principal.fromActor(bal)));
+        user3 := ?(await User.User(Principal.fromActor(gov), Principal.fromActor(bal)));
       };
     }
   };
@@ -88,7 +88,7 @@ actor {
       await deployBalances();
       ignore deployApp(); // requires Balances
       ignore deployGovernor(); // requires Balances
-      ignore deployBidders();
+      ignore deployUsers();
     };
   };
 
