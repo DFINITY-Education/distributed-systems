@@ -3,19 +3,6 @@
     "distributed_systems": {
       "main": "src/Main.mo",
       "type": "motoko"
-    },
-    "distributed_systems_assets": {
-      "dependencies": [
-        "distributed_systems"
-      ],
-      "frontend": {
-        "entrypoint": "frontend/index.jsx"
-      },
-      "source": [
-        "frontend/assets",
-        "dist/distributed_systems_assets/"
-      ],
-      "type": "assets"
     }
   },
   "defaults": {
