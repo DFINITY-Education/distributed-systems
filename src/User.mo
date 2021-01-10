@@ -15,7 +15,7 @@ actor class User(govAddr: Principal, balancesAddr: Principal) = User {
 
   public func sendMakeBidMessage(auctionId: Nat) : async () {
     let action = #makeBid(me, auctionId, await balances.getBalance(me));
-    ignore await sendMessage(action);
+    ignore await sendPayload(action);
   };
 
   public func sendStartAuctionMessage(
@@ -24,17 +24,18 @@ actor class User(govAddr: Principal, balancesAddr: Principal) = User {
     url: Text
   ) : async () {
     let action = #startAuction(me, name, description, url);
-    ignore await sendMessage(action);
+    ignore await sendPayload(action);
   };
 
   func getCurrentApp() : async (Principal) {
     await governor.getCurrentApp()
   };
 
-  func sendMessage(action: Action) : async () {
+  func sendPayload(_action: Action) : async () {
     let currentApp = actor (Principal.toText(await getCurrentApp())) : App.App;
-    let seq = (await currentApp.getSeq(me)) + 1;
-    await currentApp.sendMessage(seq, action);
+    let seqNum = (await currentApp.getSeq(me)) + 1;
+    ignore await currentApp.sendPayload({ seq = seqNum; action = _action;});
+    ignore await currentApp.processActions();
   };
 
 };

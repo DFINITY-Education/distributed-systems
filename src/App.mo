@@ -4,7 +4,9 @@ import HashMap "mo:base/HashMap";
 import Heap "mo:base/Heap";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
+import Option "mo:base/Option";
 import Order "mo:base/Order";
+import Prelude "mo:base/Prelude";
 import Principal "mo:base/Principal";
 import Time "mo:base/Time";
 
@@ -25,7 +27,7 @@ actor class App(balancesAddr: Principal) = App {
   let balances = actor (Principal.toText(balancesAddr)) : Balances.Balances;
 
   let auctions = HashMap.HashMap<AuctionId, Auction>(1, Nat.equal, Hash.hash);
-  let userStates = HashMap.HashMap<UserId, UserState>(1, Nat.equal, Hash.hash);
+  let userStates = HashMap.HashMap<UserId, UserState>(1, Principal.equal, Principal.hash);
   var auctionCounter = 0;
 
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
@@ -109,10 +111,10 @@ actor class App(balancesAddr: Principal) = App {
       };
       case (?auction) {
         // Current highest bidder cannot acquire the lock to stall
-        if (msg.caller == auction.highestBidder) {
+        if (msg.caller == Option.unwrap(auction.highestBidder)) {
           #err(#highestBidderNotPermitted)
         } else if (Time.now() > auction.lock_ttl) {
-          auctions.put(auctionId, setNewLock(auction, msg.caller));
+          auctions.put(id, setNewLock(auction, msg.caller));
           #ok()
         } else {
           #err(#lockNotAcquired)
@@ -131,25 +133,25 @@ actor class App(balancesAddr: Principal) = App {
 
   func makeNewUserState() : (UserState) {
     {
-      seq: 0;
-      payloads: Heap.Heap<Msg>(payloadOrd);
+      var seq = 0;
+      payloads = Heap.Heap<Payload>(payloadOrd);
     }
   };
 
-  func getSeq(id: UserId) : (Nat) {
+  public func getSeq(id: UserId) : async (Nat) {
     switch (userStates.get(id)) {
       case (null) {
-        userStates.put(makeNewUserState())
+        userStates.put(id, makeNewUserState());
         0
       };
-      case (userState) userState.seq;
+      case (?userState) userState.seq;
     }
   };
 
   func putPayload(id: UserId, payload: Payload) : () {
     switch (userStates.get(id)) {
       case (null) Prelude.unreachable();
-      case (userState) {
+      case (?userState) {
         userState.payloads.put(payload);
         userState.seq := payload.seq;
       };
@@ -157,7 +159,7 @@ actor class App(balancesAddr: Principal) = App {
   };
 
   public shared(msg) func sendPayload(payload: Payload) : async (Result) {
-    let seq = getSeq(msg.caller);
+    let seq = await getSeq(msg.caller);
     if (payload.seq >= seq) {
       putPayload(msg.caller, payload);
       #ok()
@@ -166,19 +168,23 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
-  public shared(msg) func processActions() : (Result) {
+  public shared(msg) func processActions() : async (Result) {
     switch (userStates.get(msg.caller)) {
       case (null) return #err(#userNotFound);
-      case (userState) {
+      case (?userState) {
         loop {
-          switch (userState.payloads.peekMin().action) {
-            case (#makeBid(bidder, auctionId, amount)) {
-              await makeBid(bidder, auctionId, amount)
-            };
-            case (#startAuction(owner, name, description, url)) {
-              await startAuction(owner, name, description, url)
-            };
+          switch (userState.payloads.peekMin()) {
             case (null) { return #ok() };
+            case (?payload) {
+              switch (payload.action) {
+                case (#makeBid(bidder, auctionId, amount)) {
+                  ignore await makeBid(bidder, auctionId, amount)
+                };
+                case (#startAuction(owner, name, description, url)) {
+                  startAuction(owner, name, description, url)
+                };
+              };
+            };
           };
           userState.payloads.deleteMin();
         };
@@ -190,7 +196,7 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 4 EXERCISES //
   ////////////////////////
 
-  public func sendMessageWithHashing() {}
+  public func sendMessageWithHashing() {};
 
 
   ////////////////////////
