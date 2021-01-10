@@ -1,8 +1,10 @@
 import Array "mo:base/Array";
 import Hash "mo:base/Hash";
 import HashMap "mo:base/HashMap";
+import Heap "mo:base/Heap";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
+import Order "mo:base/Order";
 import Principal "mo:base/Principal";
 import Time "mo:base/Time";
 
@@ -15,12 +17,15 @@ actor class App(balancesAddr: Principal) = App {
   type Auction = Types.Auction;
   type AuctionId = Types.AuctionId;
   type Item = Types.Item;
+  type Payload = Types.Payload;
   type Result = Types.Result;
   type UserId = Types.UserId;
+  type UserState = Types.UserState;
 
   let balances = actor (Principal.toText(balancesAddr)) : Balances.Balances;
 
   let auctions = HashMap.HashMap<AuctionId, Auction>(1, Nat.equal, Hash.hash);
+  let userStates = HashMap.HashMap<UserId, UserState>(1, Nat.equal, Hash.hash);
   var auctionCounter = 0;
 
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
@@ -120,22 +125,65 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 3 EXERCISES //
   ////////////////////////
 
-  public shared(msg) func sendMessage(seq: Nat, action: Action) : async () {
-    if (msg.seq >= getSeq(msg.caller)) {
-      // queue up the message
-    } // otherwise ignore
-    processMessages();
+  func payloadOrd(x: Payload, y: Payload) : (Order.Order) {
+    if (x.seq < y.seq) #less else #greater
   };
 
-  func processMessages(msg: Message) {
-    switch (msg) {
-      case (#makeBid) {
-        ...
+  func makeNewUserState() : (UserState) {
+    {
+      seq: 0;
+      payloads: Heap.Heap<Msg>(payloadOrd);
+    }
+  };
+
+  func getSeq(id: UserId) : (Nat) {
+    switch (userStates.get(id)) {
+      case (null) {
+        userStates.put(makeNewUserState())
+        0
       };
-      case (#startAuction) {
-        ...
+      case (userState) userState.seq;
+    }
+  };
+
+  func putPayload(id: UserId, payload: Payload) : () {
+    switch (userStates.get(id)) {
+      case (null) Prelude.unreachable();
+      case (userState) {
+        userState.payloads.put(payload);
+        userState.seq := payload.seq;
       };
     }
+  };
+
+  public shared(msg) func sendPayload(payload: Payload) : async (Result) {
+    let seq = getSeq(msg.caller);
+    if (payload.seq >= seq) {
+      putPayload(msg.caller, payload);
+      #ok()
+    } else {
+      #err(#seqOutOfOrder)
+    }
+  };
+
+  public shared(msg) func processActions() : (Result) {
+    switch (userStates.get(msg.caller)) {
+      case (null) return #err(#userNotFound);
+      case (userState) {
+        loop {
+          switch (userState.payloads.peekMin().action) {
+            case (#makeBid(bidder, auctionId, amount)) {
+              await makeBid(bidder, auctionId, amount)
+            };
+            case (#startAuction(owner, name, description, url)) {
+              await startAuction(owner, name, description, url)
+            };
+            case (null) { return #ok() };
+          };
+          userState.payloads.deleteMin();
+        };
+      };
+    };
   };
 
   ////////////////////////

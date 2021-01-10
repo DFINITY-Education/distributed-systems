@@ -1,4 +1,5 @@
 import Hash "mo:base/Hash";
+import Heap "mo:base/Heap";
 import Nat "mo:base/Nat";
 import Result "mo:base/Result";
 
@@ -18,9 +19,14 @@ module {
     );
   };
 
-  public type Msg = {
+  public type Payload = {
     seq: Nat;
     action: Action;
+  };
+
+  public type UserState = {
+    var seq: Nat;
+    payloads: Heap.Heap<Payload>;
   };
 
   public type Auction = {
@@ -62,6 +68,7 @@ module {
     #userNotFound;
     #lockNotAcquired;
     #highestBidderNotPermitted;
+    #seqOutOfOrder;
   };
 
   public type Vote = {
