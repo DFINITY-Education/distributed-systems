@@ -63,36 +63,38 @@ actor class App(balancesAddr: Principal) = App {
   ///   (see "Error" in Types.mo for possible errors).
   public shared(msg) func makeBid(
     bidder: Principal,
-    auctionId: Nat,
+    auctionId: AuctionId,
     amount: Nat
   ) : async (Result) {
     let balance = await balances.getBalance(bidder);
     if (amount > balance) return #err(#insufficientBalance);
 
     switch (auctions.get(auctionId)) {
-      case (null) {
-        #err(#auctionNotFound)
-      };
+      case (null) #err(#auctionNotFound);
       case (?auction) {
-        if (auction.lock != msg.caller) return #err(#lockNotAcquired);
-        switch (auction.highestBidder) {
-          case (null) {
-            auctions.put(auctionId, setNewBidder(auction, amount, bidder));
-            #ok()
-          };
-          case (?previousHighestBidder) {
-            if (amount > auction.highestBid) {
-              let myPrincipal = Principal.fromActor(App);
-              ignore balances.transfer(bidder, myPrincipal, amount);
-              ignore balances.transfer(
-                myPrincipal,
-                previousHighestBidder,
-                auction.highestBid
-              );
-              auctions.put(auctionId, setNewBidder(auction, amount, bidder));
-              #ok()
-            } else {
-              #err(#belowMinimumBid)
+        switch (acquireLock(msg.caller, auctionId, auction)) {
+          case (#err(e)) #err(e);
+          case (#ok) {
+            switch (auction.highestBidder) {
+              case (null) {
+                auctions.put(auctionId, setNewBidder(auction, amount, bidder));
+                #ok()
+              };
+              case (?previousHighestBidder) {
+                if (amount > auction.highestBid) {
+                  let myPrincipal = Principal.fromActor(App);
+                  ignore balances.transfer(bidder, myPrincipal, amount);
+                  ignore balances.transfer(
+                    myPrincipal,
+                    previousHighestBidder,
+                    auction.highestBid
+                  );
+                  auctions.put(auctionId, setNewBidder(auction, amount, bidder));
+                  #ok()
+                } else {
+                  #err(#belowMinimumBid)
+                }
+              };
             }
           };
         }
@@ -104,22 +106,19 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 2 EXERCISES //
   ////////////////////////
 
-  public shared(msg) func acquireLock(id: AuctionId) : async (Result) {
-    switch (auctions.get(id)) {
-      case (null) {
-        #err(#auctionNotFound)
-      };
-      case (?auction) {
-        // Current highest bidder cannot acquire the lock to stall
-        if (msg.caller == Option.unwrap(auction.highestBidder)) {
-          #err(#highestBidderNotPermitted)
-        } else if (Time.now() > auction.lock_ttl) {
-          auctions.put(id, setNewLock(auction, msg.caller));
-          #ok()
-        } else {
-          #err(#lockNotAcquired)
-        }
-      };
+  func acquireLock(
+    id: UserId,
+    auctionId: AuctionId,
+    auction: Auction
+  ) : (Result) {
+    // Current highest bidder cannot acquire the lock to stall
+    if (id == Option.unwrap(auction.highestBidder)) {
+      #err(#highestBidderNotPermitted)
+    } else if (Time.now() > auction.lock_ttl) {
+      auctions.put(auctionId, setNewLock(auction, id));
+      #ok()
+    } else {
+      #err(#lockNotAcquired)
     }
   };
 

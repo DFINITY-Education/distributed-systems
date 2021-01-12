@@ -15,7 +15,7 @@ actor class User(govAddr: Principal, balancesAddr: Principal) = User {
 
   public func sendMakeBidMessage(auctionId: Nat) : async () {
     let action = #makeBid(me, auctionId, await balances.getBalance(me));
-    ignore await sendPayload(action);
+    await sendPayload(action);
   };
 
   public func sendStartAuctionMessage(
@@ -24,7 +24,7 @@ actor class User(govAddr: Principal, balancesAddr: Principal) = User {
     url: Text
   ) : async () {
     let action = #startAuction(me, name, description, url);
-    ignore await sendPayload(action);
+    await sendPayload(action);
   };
 
   func getCurrentApp() : async (Principal) {
