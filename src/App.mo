@@ -8,6 +8,7 @@ import Option "mo:base/Option";
 import Order "mo:base/Order";
 import Prelude "mo:base/Prelude";
 import Principal "mo:base/Principal";
+import Text "mo:base/Text";
 import Time "mo:base/Time";
 
 import Balances "./Balances";
@@ -18,6 +19,8 @@ actor class App(balancesAddr: Principal) = App {
   type Action = Types.Action;
   type Auction = Types.Auction;
   type AuctionId = Types.AuctionId;
+  type HashedPayload = Types.HashedPayload;
+  type HashedUserState = Types.HashedUserState;
   type Item = Types.Item;
   type Payload = Types.Payload;
   type Result = Types.Result;
@@ -28,6 +31,7 @@ actor class App(balancesAddr: Principal) = App {
 
   let auctions = HashMap.HashMap<AuctionId, Auction>(1, Nat.equal, Hash.hash);
   let userStates = HashMap.HashMap<UserId, UserState>(1, Principal.equal, Principal.hash);
+  let hashedUserStates = HashMap.HashMap<UserId, HashedUserState>(1, Principal.equal, Principal.hash);
   var auctionCounter = 0;
 
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
@@ -195,8 +199,46 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 4 EXERCISES //
   ////////////////////////
 
-  public func sendMessageWithHashing() {};
+  func hashedPayloadOrd(x: HashedPayload, y: HashedPayload) : (Order.Order) {
+    if (x.seq < y.seq) #less else #greater
+  };
 
+  func makeNewHashedUserState() : (HashedUserState) {
+    {
+      var seq = 0;
+      payloads = Heap.Heap<HashedPayload>(hashedPayloadOrd);
+    }
+  };
+
+  public func getHashedSeq(id: UserId) : async (Nat) {
+    switch (hashedUserStates.get(id)) {
+      case (null) {
+        hashedUserStates.put(id, makeNewHashedUserState());
+        0
+      };
+      case (?hashedUserState) hashedUserState.seq;
+    }
+  };
+
+  func putHashedPayload(id: UserId, hashedPayload: HashedPayload) : () {
+    switch (hashedUserStates.get(id)) {
+      case (null) Prelude.unreachable();
+      case (?hashedUserState) {
+        hashedUserState.payloads.put(hashedPayload);
+        hashedUserState.seq := hashedPayload.seq;
+      };
+    }
+  };
+
+  public shared(msg) func sendHashedPayload(hashedPayload: HashedPayload) : async (Result) {
+    let seq = await getSeq(msg.caller);
+    if (hashedPayload.seq >= seq) {
+      putHashedPayload(msg.caller, hashedPayload);
+      #ok()
+    } else {
+      #err(#seqOutOfOrder)
+    }
+  };
 
   ////////////////////////
   //   HELPER METHODS   //

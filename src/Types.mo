@@ -29,6 +29,16 @@ module {
     payloads: Heap.Heap<Payload>;
   };
 
+  public type HashedPayload = {
+    seq: Nat;
+    hashAction: Hash.Hash;
+  };
+
+  public type HashedUserState = {
+    var seq: Nat;
+    payloads: Heap.Heap<HashedPayload>;
+  };
+
   public type Auction = {
     owner: UserId;
     item: Item;

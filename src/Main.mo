@@ -25,9 +25,9 @@ actor {
   var app : ?App = null;
   var balances : ?Balances = null;
   var governor : ?Governor = null;
-  var User1 : ?User = null;
-  var User2 : ?User = null;
-  var User3 : ?User = null;
+  var user1 : ?User = null;
+  var user2 : ?User = null;
+  var user3 : ?User = null;
 
   // Performs initial setup operations by instantiating the Balances, App, and Governor canisters
   public shared(msg) func deployBalances() : async () {
@@ -47,7 +47,7 @@ actor {
       case (_, null) Debug.print("Should call deployBalances() first");
       case (_, ?bal) {
         let tempApp = await App.App(Principal.fromActor(bal));
-        tempApp.auctionItem(
+        tempApp.startAuction(
           Principal.fromActor(tempApp),
           "example name",
           "example description",
