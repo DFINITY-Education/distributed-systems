@@ -19,8 +19,8 @@ actor class App(balancesAddr: Principal) = App {
   type Action = Types.Action;
   type Auction = Types.Auction;
   type AuctionId = Types.AuctionId;
-  type HashedPayload = Types.HashedPayload;
-  type HashedUserState = Types.HashedUserState;
+  type BidProof = Types.BidProof;
+  type HashedBid = Hash.Hash;
   type Item = Types.Item;
   type Payload = Types.Payload;
   type Result = Types.Result;
@@ -31,7 +31,7 @@ actor class App(balancesAddr: Principal) = App {
 
   let auctions = HashMap.HashMap<AuctionId, Auction>(1, Nat.equal, Hash.hash);
   let userStates = HashMap.HashMap<UserId, UserState>(1, Principal.equal, Principal.hash);
-  let hashedUserStates = HashMap.HashMap<UserId, HashedUserState>(1, Principal.equal, Principal.hash);
+  let hashedBids = HashMap.HashMap<AuctionId, [HashedBid]>(1, Nat.equal, Hash.hash);
   var auctionCounter = 0;
 
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
@@ -65,7 +65,7 @@ actor class App(balancesAddr: Principal) = App {
   /// Returns:
   ///   A Result indicating if the bid was successfully processed
   ///   (see "Error" in Types.mo for possible errors).
-  public shared(msg) func makeBid(
+  public func makeBid(
     bidder: Principal,
     auctionId: AuctionId,
     amount: Nat
@@ -76,12 +76,13 @@ actor class App(balancesAddr: Principal) = App {
     switch (auctions.get(auctionId)) {
       case (null) #err(#auctionNotFound);
       case (?auction) {
-        switch (acquireLock(msg.caller, auctionId, auction)) {
+        if (Time.now() > auction.ttl) { return #err(#auctionExpired) };
+        switch (acquireLock(bidder, auctionId, auction)) {
           case (#err(e)) #err(e);
           case (#ok) {
             switch (auction.highestBidder) {
               case (null) {
-                auctions.put(auctionId, setNewBidder(auction, amount, bidder));
+                auctions.put(auctionId, setNewBidder(auction, bidder, amount));
                 #ok()
               };
               case (?previousHighestBidder) {
@@ -93,7 +94,7 @@ actor class App(balancesAddr: Principal) = App {
                     previousHighestBidder,
                     auction.highestBid
                   );
-                  auctions.put(auctionId, setNewBidder(auction, amount, bidder));
+                  auctions.put(auctionId, setNewBidder(auction, bidder, amount));
                   #ok()
                 } else {
                   #err(#belowMinimumBid)
@@ -199,44 +200,84 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 4 EXERCISES //
   ////////////////////////
 
-  func hashedPayloadOrd(x: HashedPayload, y: HashedPayload) : (Order.Order) {
-    if (x.seq < y.seq) #less else #greater
-  };
-
-  func makeNewHashedUserState() : (HashedUserState) {
-    {
-      var seq = 0;
-      payloads = Heap.Heap<HashedPayload>(hashedPayloadOrd);
+  public shared(msg) func makeHashedBid(
+    auctionId: AuctionId,
+    hashedBid: Hash.Hash
+  ) : async (Result) {
+    switch (auctions.get(auctionId)) {
+      case (null) #err(#auctionNotFound);
+      case (?auction) {
+        if (Time.now() > auction.ttl) { return #err(#auctionExpired) };
+        hashedBids.put(
+          auctionId,
+          Array.append<HashedBid>(
+            [hashedBid],
+            switch (hashedBids.get(auctionId)) {
+              case (null) [];
+              case (?hashedBidsArr) hashedBidsArr;
+            }
+          )
+        );
+        #ok()
+      };
     }
   };
 
-  public func getHashedSeq(id: UserId) : async (Nat) {
-    switch (hashedUserStates.get(id)) {
+  func proofHash(bidProof: BidProof) : Hash.Hash {
+    Text.hash(Nat.toText(bidProof.amount) # bidProof.salt)
+  };
+
+  func processBid(
+    auctionId: AuctionId,
+    auction: Auction,
+    bidder: UserId,
+    amount: Nat
+  ) : async (Result) {
+    switch (auction.highestBidder) {
       case (null) {
-        hashedUserStates.put(id, makeNewHashedUserState());
-        0
+        auctions.put(auctionId, setNewBidder(auction, bidder, amount));
+        #ok()
       };
-      case (?hashedUserState) hashedUserState.seq;
+      case (?previousHighestBidder) {
+        if (amount > auction.highestBid) {
+          let myPrincipal = Principal.fromActor(App);
+          ignore balances.transfer(bidder, myPrincipal, amount);
+          ignore balances.transfer(
+            myPrincipal,
+            previousHighestBidder,
+            auction.highestBid
+          );
+          auctions.put(auctionId, setNewBidder(auction, bidder, amount));
+          #ok()
+        } else {
+          #err(#belowMinimumBid)
+        }
+      };
     }
   };
 
-  func putHashedPayload(id: UserId, hashedPayload: HashedPayload) : () {
-    switch (hashedUserStates.get(id)) {
-      case (null) Prelude.unreachable();
-      case (?hashedUserState) {
-        hashedUserState.payloads.put(hashedPayload);
-        hashedUserState.seq := hashedPayload.seq;
+  public shared(msg) func publishBidProof(
+    auctionId: AuctionId,
+    bidProof: BidProof
+  ) : async (Result) {
+    switch (auctions.get(auctionId)) {
+      case (null) #err(#auctionNotFound);
+      case (?auction) {
+        if (Time.now() < auction.ttl) { return #err(#auctionStillActive) };
+        let proof = proofHash(bidProof);
+        switch (Array.find<HashedBid>(
+          switch (hashedBids.get(auctionId)) {
+            case (null) [];
+            case (?hashedBidsArr) hashedBidsArr;
+          },
+          func (elem: HashedBid) : Bool { Hash.equal(elem, proof) }
+        )) {
+          case (null) #err(#bidHashNotSubmitted);
+          case (_) {
+            await processBid(auctionId, auction, msg.caller, bidProof.amount)
+          };
+        }
       };
-    }
-  };
-
-  public shared(msg) func sendHashedPayload(hashedPayload: HashedPayload) : async (Result) {
-    let seq = await getSeq(msg.caller);
-    if (hashedPayload.seq >= seq) {
-      putHashedPayload(msg.caller, hashedPayload);
-      #ok()
-    } else {
-      #err(#seqOutOfOrder)
     }
   };
 
@@ -300,7 +341,7 @@ actor class App(balancesAddr: Principal) = App {
   ///   |bid|      The highest bid of the auction.
   /// Returns:
   ///   The updated Auction (see Auction in Types.mo)
-  func setNewBidder(auction: Auction, bid: Nat, bidder: Principal) : (Auction) {
+  func setNewBidder(auction: Auction, bidder: Principal, bid: Nat) : (Auction) {
     {
       owner = auction.owner;
       item = auction.item;

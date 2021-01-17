@@ -29,14 +29,9 @@ module {
     payloads: Heap.Heap<Payload>;
   };
 
-  public type HashedPayload = {
-    seq: Nat;
-    hashAction: Hash.Hash;
-  };
-
-  public type HashedUserState = {
-    var seq: Nat;
-    payloads: Heap.Heap<HashedPayload>;
+  public type BidProof = {
+    amount: Nat;
+    salt: Text;
   };
 
   public type Auction = {
@@ -75,10 +70,15 @@ module {
     #belowMinimumBid;
     #insufficientBalance;
     #auctionNotFound;
+    #auctionExpired;
     #userNotFound;
     #lockNotAcquired;
     #highestBidderNotPermitted;
     #seqOutOfOrder;
+
+    // Module 4
+    #auctionStillActive;
+    #bidHashNotSubmitted;
   };
 
   public type Vote = {
