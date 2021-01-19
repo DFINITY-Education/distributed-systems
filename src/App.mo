@@ -19,10 +19,10 @@ actor class App(balancesAddr: Principal) = App {
   type Action = Types.Action;
   type Auction = Types.Auction;
   type AuctionId = Types.AuctionId;
+  type Bid = Types.Bid;
   type BidProof = Types.BidProof;
   type HashedBid = Hash.Hash;
   type Item = Types.Item;
-  type Payload = Types.Payload;
   type Result = Types.Result;
   type UserId = Types.UserId;
   type UserState = Types.UserState;
@@ -30,8 +30,11 @@ actor class App(balancesAddr: Principal) = App {
   let balances = actor (Principal.toText(balancesAddr)) : Balances.Balances;
 
   let auctions = HashMap.HashMap<AuctionId, Auction>(1, Nat.equal, Hash.hash);
+  // Module 3
   let userStates = HashMap.HashMap<UserId, UserState>(1, Principal.equal, Principal.hash);
+  // Module 4
   let hashedBids = HashMap.HashMap<AuctionId, [HashedBid]>(1, Nat.equal, Hash.hash);
+
   var auctionCounter = 0;
 
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
@@ -131,14 +134,14 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 3 EXERCISES //
   ////////////////////////
 
-  func payloadOrd(x: Payload, y: Payload) : (Order.Order) {
+  func bidOrd(x: Bid, y: Bid) : (Order.Order) {
     if (x.seq < y.seq) #less else #greater
   };
 
   func makeNewUserState() : (UserState) {
     {
       var seq = 0;
-      payloads = Heap.Heap<Payload>(payloadOrd);
+      bids = Heap.Heap<Bid>(bidOrd);
     }
   };
 
@@ -152,45 +155,38 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
-  func putPayload(id: UserId, payload: Payload) : () {
+  func putBid(id: UserId, bid: Bid) : () {
     switch (userStates.get(id)) {
       case (null) Prelude.unreachable();
       case (?userState) {
-        userState.payloads.put(payload);
-        userState.seq := payload.seq;
+        userState.bids.put(bid);
+        userState.seq := bid.seq;
       };
     }
   };
 
-  public shared(msg) func sendPayload(payload: Payload) : async (Result) {
+  public shared(msg) func makeQueuedBid(bid: Bid) : async (Result) {
     let seq = await getSeq(msg.caller);
-    if (payload.seq >= seq) {
-      putPayload(msg.caller, payload);
+    if (bid.seq >= seq) {
+      putBid(msg.caller, bid);
       #ok()
     } else {
       #err(#seqOutOfOrder)
     }
   };
 
-  public shared(msg) func processActions() : async (Result) {
+  public shared(msg) func processBids() : async (Result) {
     switch (userStates.get(msg.caller)) {
       case (null) return #err(#userNotFound);
       case (?userState) {
         loop {
-          switch (userState.payloads.peekMin()) {
+          switch (userState.bids.peekMin()) {
             case (null) { return #ok() };
-            case (?payload) {
-              switch (payload.action) {
-                case (#makeBid(bidder, auctionId, amount)) {
-                  ignore await makeBid(bidder, auctionId, amount)
-                };
-                case (#startAuction(owner, name, description, url)) {
-                  startAuction(owner, name, description, url)
-                };
-              };
+            case (?bid) {
+              ignore await makeBid(msg.caller, bid.auctionId, bid.amount)
             };
           };
-          userState.payloads.deleteMin();
+          userState.bids.deleteMin();
         };
       };
     };
@@ -227,7 +223,7 @@ actor class App(balancesAddr: Principal) = App {
     Text.hash(Nat.toText(bidProof.amount) # bidProof.salt)
   };
 
-  func processBid(
+  func processHashedBids(
     auctionId: AuctionId,
     auction: Auction,
     bidder: UserId,
@@ -274,7 +270,7 @@ actor class App(balancesAddr: Principal) = App {
         )) {
           case (null) #err(#bidHashNotSubmitted);
           case (_) {
-            await processBid(auctionId, auction, msg.caller, bidProof.amount)
+            await processHashedBids(auctionId, auction, msg.caller, bidProof.amount)
           };
         }
       };

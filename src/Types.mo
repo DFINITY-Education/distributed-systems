@@ -19,14 +19,15 @@ module {
     );
   };
 
-  public type Payload = {
+  public type Bid = {
     seq: Nat;
-    action: Action;
+    amount: Nat;
+    auctionId: AuctionId;
   };
 
   public type UserState = {
     var seq: Nat;
-    payloads: Heap.Heap<Payload>;
+    bids: Heap.Heap<Bid>;
   };
 
   public type BidProof = {
