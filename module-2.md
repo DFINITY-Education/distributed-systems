@@ -1,8 +1,6 @@
 # Module 2: Locks
 
-Before we foray into bid ordering, let's explore another issue related to distributed systems: near-simultaneous calls of a canister method by two different nodes. In our current open auction platform, users receive no guarantee that their bids will be accepted, even after the method is invoked. Imagine that a user bid on an auction, but... [example of issue solved by locking]
-
-[Locking](https://www.geeksforgeeks.org/implementation-of-locking-in-dbms/#:~:text=Locking%20protocols%20are%20used%20in,is%20called%20as%20Lock%20Manager.) is often a method used in database management systems to ensure that a particular piece of data cannot be simultaneously modified by different processes.
+Before we foray into bid ordering, let's explore another issue related to distributed systems: near-simultaneous calls of a canister method by two different nodes. In our current open auction platform, users receive no guarantee that their bids will be accepted, even after the method is invoked. [Locking](https://www.geeksforgeeks.org/implementation-of-locking-in-dbms/#:~:text=Locking%20protocols%20are%20used%20in,is%20called%20as%20Lock%20Manager.) is often a method used in database management systems to ensure that a particular piece of data cannot be simultaneously modified by different processes.
 
  ## Your Task
 
@@ -19,8 +17,6 @@ We've modified the `Auction` type to maintain two more attributes: `lock`, repre
 #### `App.mo`
 
 `setNewLock` is a helper function that updates an `Auction`'s `lock` and `lock_ttl` fields fields once a lock is acquired. We call this helper in `acquireLock`.
-
-`setNewBidder` [complete...]
 
 ### Specification
 
