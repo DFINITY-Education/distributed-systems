@@ -22,13 +22,13 @@ Let's jump to the **MODULE 4 EXERCISES** section in `App.mo` next, where you'll 
 
 `proofHash()` is a helper function used to actually create the hash of the `BidProof`. This function simply appends the bid `amount` to the `salt` and then calls the `Text.Hash` function from the Motoko Base library on this entire string. The resulting hash is what's stored in `hashedBids` .
 
+`processHashedBids()` is a helper used in `publishBidProof()` that processes bids once the bidder has published their bid proof - it's similar in nature to the `processBids()` method that you implemented in Module 3.
+
 ### Specification
 
 **Task:** Complete the implementation of `makeHashedBid()`, `processHashedBids()`, and `publishBidProof()` in the **MODULE 4 EXERCISES** section of `App.mo`.
 
 **`makeHashedBid()`** accepts an `auctionId` and `hashedBid` and adds that bid to the auction's array of bids in `HashedBids`
-
-**`processHashedBids()`** is a helper used in `publishBidProof()` that processes bids once the bidder has published their bid proof
 
 **`publishBidProof()`** is a function users call once an auction is over to "reveal" their bids. They specify the `auctionId` and `bidProof`, which allows the bid to be verified
 

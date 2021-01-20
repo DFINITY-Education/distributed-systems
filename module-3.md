@@ -26,7 +26,9 @@ The first new addition you should notice in `App.mo` is the new global variable 
 
 Let's jump to the **MODULE 3 EXERCISES** section in `App.mo` next, where you'll see two helper functions `makeNewUserState()` and `bidOrd`. `makeNewUserState()` is used to initialize a `UserState` stored in `userStates`; naturally, it starts the `seq` number at 0 and creates a new Heap of `Bid`s, using the `bidOrd()` function as a way of ordering the Heap by `Bid` sequence number. For those unfamiliar, Heaps are a [Tree-based data structure](https://www.geeksforgeeks.org/heap-data-structure/) that allows us to easily find the "smallest" item in the tree. This is useful in our case of storing bids because we often want to access the bid with the smallest sequence number to process it.
 
-[Determine which methods we want students to complete]
+`getSeq()` is a helper function used retrieves the current sequence of the user associated with `id`. If this `UserId` doesn't have an associated `UserState`, we create one using the `makeNewUserState()` helper.
+
+The rest of the functions in the Module 3 section are left for you to implement - see the specification for more details.
 
 #### `User.mo`
 
@@ -36,17 +38,13 @@ When a user wants to make a bid on an existing auction, they call `makeQueuedBid
 
 ### Specification
 
-**Task:** Complete the implementation of `getSeq()`, `putBid()`, `makeQueuedBid()`, and `processBids()` in the **MODULE 3 EXERCISES** section of `App.mo`.
-
-**`getSeq()`** retrieves the current sequence of the user associated with `id`
+**Task:** Complete the implementation of `putBid()`, `makeQueuedBid()`, and `processBids()` in the **MODULE 3 EXERCISES** section of `App.mo`.
 
 **`putBid()`** is a helper that takes in a user `id` + `bid` and adds the specified `bid` to the `userState` of that user
 
 **`makeQueuedBid()`** is the function that users call to queue a `bid`. It checks that the `bid` being queued has a sequence number greater than the current `seq` of the user's `userState`, and, if so, calls `putBid()` to add that bid to the queue.
 
 **`processBids()`** is the function users call to process all the the current bids stored in their `userState`
-
-
 
 ### Deploying
 
