@@ -35,6 +35,7 @@ actor class App(balancesAddr: Principal) = App {
   // Module 4
   let hashedBids = HashMap.HashMap<AuctionId, [HashedBid]>(1, Nat.equal, Hash.hash);
 
+  // Used to create unique auctionIds in startAuction()
   var auctionCounter = 0;
 
   public query func getAuctions() : async ([(AuctionId, Auction)]) {
@@ -145,6 +146,7 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
+  // Used in both User.mo's makeQueuedBid() and App.mo's makeQueuedBid()
   public func getSeq(id: UserId) : async (Nat) {
     switch (userStates.get(id)) {
       case (null) {

@@ -19,17 +19,20 @@ module {
     );
   };
 
+  // Module 3
   public type Bid = {
     seq: Nat;
     amount: Nat;
     auctionId: AuctionId;
   };
 
+  // Module 3
   public type UserState = {
     var seq: Nat;
     bids: Heap.Heap<Bid>;
   };
 
+  // Module 4
   public type BidProof = {
     amount: Nat;
     salt: Text;
