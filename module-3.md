@@ -18,7 +18,7 @@ We've implemented two new types that you should be aware of for this module:
 
 First, a `Bid` is composed of a `seq`, representing the sequence number of the bid, an `amount` representing the bid amount, and the `auctionId` of the auction being bid on.
 
-Second, `UserState` is a variant type that keeps track of a user's queued and most recently processed bids. In the `UserState` type,  `seq` represents the sequence number of the most recently processed bid, while `bids` uses a [Heap](https://sdk.dfinity.org/docs/base-libraries/heap#class.Heap) to store all the queued bids that have yet to be processed (more to come on this in the `App.mo` section). 
+Second, `UserState` is a variant type that keeps track of a user's queued and most recently processed bids. In the `UserState` type,  `seq` represents a sequence counter (which increases by 1 as each `bid` is added to the queue), while `bids` uses a [Heap](https://sdk.dfinity.org/docs/base-libraries/heap#class.Heap) to store all the queued bids that have yet to be processed (more to come on this in the `App.mo` section). 
 
 #### `App.mo`
 
@@ -38,13 +38,23 @@ When a user wants to make a bid on an existing auction, they call `makeQueuedBid
 
 ### Specification
 
-**Task:** Complete the implementation of `putBid()`, `makeQueuedBid()`, and `processBids()` in the **MODULE 3 EXERCISES** section of `App.mo`.
-
-**`putBid()`** is a helper that takes in a user `id` + `bid` and adds the specified `bid` to the `userState` of that user
+**Task:** Complete the implementation of `makeQueuedBid()` and `processBids()` in the **MODULE 3 EXERCISES** section of `App.mo`.
 
 **`makeQueuedBid()`** is the function that users call to queue a `bid`. It checks that the `bid` being queued has a sequence number greater than the current `seq` of the user's `userState`, and, if so, calls `putBid()` to add that bid to the queue.
 
+* Before a bid can be queued, you much check that the `bid` has a sequence number greater than the current `seq` of the user's `userState`
+  * If this isn't the case, return the `#seqOutOfOrder` error
+* To add the `bid` to the queue, you much modify the `UserState` corresponding to the bidder's `UserId`. Remember to both add the `bid` to the heap of bids as well as update the `seq` field of the `UserState` to match this `seq` of the most recently added bid.
+  * Hint: remember that we can use `msg.caller` to access the id of the user calling this function. 
+* If the bid is successfully queued, don't forget to return  `#ok()` 
+
 **`processBids()`** is the function users call to process all the the current bids stored in their `userState`
+
+* Retrieve the `UserState` corresponding the the `UserId` of the user that called this method
+  * If there is no `UserState` associated with this `UserId`, return the `#userNotFound` error
+* Starting with the bid with the smallest sequence number, iteratively call `makeBid` to "process" each bid. Don't forget to remove the bid you just processed from the heap (see the [Motoko heap](https://sdk.dfinity.org/docs/base-libraries/heap) documentation for useful functions to accomplish this).
+  * Hint: note that bids are automatically ordered in our heap - you can use the `peekMin()` [method](https://sdk.dfinity.org/docs/base-libraries/heap#value.peekMin) to access the smallest bid in our heap. 
+* Once you've processed all the bids (the heap is empty), return `#ok`
 
 ### Deploying
 

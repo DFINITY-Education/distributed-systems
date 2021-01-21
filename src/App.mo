@@ -115,6 +115,33 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 2 EXERCISES //
   ////////////////////////
 
+  /// Helper method used to set a new highest bidder in an auction (used in setNewLock())
+  /// Args:
+  ///   |auction|       The Auction being updated.
+  ///   |lockAcquirer|  The id of the user acquiring the lock.
+  /// Returns:
+  ///   The updated Auction (see Auction in Types.mo)
+  func setNewLock(auction: Auction, lockAcquirer: UserId) : (Auction) {
+    {
+      owner = auction.owner;
+      item = auction.item;
+      highestBid = auction.highestBid;
+      highestBidder = auction.highestBidder;
+      ttl = auction.ttl;
+      lock = lockAcquirer;
+      lock_ttl = Time.now() + (3600 * 1000_000);
+    }
+  };
+
+  /// Creates a "lock" in a user's name for a particualr Auction, preventing other users from bidding on the 
+  ///   auction for a short period of time. 
+  /// Args:
+  ///   |id|         The UserId of the user acquiring the lock.
+  ///   |auctionId|  The id of the auction.
+  ///   |auction|    The auction itself.
+  /// Returns:
+  ///   A Result indicating if the lock was successfully acquired
+  ///   (see "Error" in Types.mo for possible errors).
   func acquireLock(
     id: UserId,
     auctionId: AuctionId,
@@ -135,10 +162,19 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 3 EXERCISES //
   ////////////////////////
 
+  /// Helper method used to order bids in the UserState heap (used in makeNewUserState())
+  /// Args:
+  ///   |x|  The first Bid.
+  ///   |y|  The second Bid.
+  /// Returns:
+  ///   A Motoko Order variant type: either #less or #greater.
   func bidOrd(x: Bid, y: Bid) : (Order.Order) {
     if (x.seq < y.seq) #less else #greater
   };
 
+  /// Helper method used to initialize a new UserState.
+  /// Returns:
+  ///   A UserState with a starting |seq| of 0 and empty |bids| heap.
   func makeNewUserState() : (UserState) {
     {
       var seq = 0;
@@ -146,7 +182,12 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
-  // Used in both User.mo's makeQueuedBid() and App.mo's makeQueuedBid()
+  /// Helper method used to retrieve the current |seq| of a user.
+  ///   Used in both User.mo's makeQueuedBid() and App.mo's makeQueuedBid().
+  /// Args:
+  ///   |id|  The UserId of the specified user.
+  /// Returns:
+  ///   A userState.seq in the form of a Nat.
   public func getSeq(id: UserId) : async (Nat) {
     switch (userStates.get(id)) {
       case (null) {
@@ -157,6 +198,12 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
+  /// Helper method used to place a bid in a user's userState.
+  ///   Note: This helper should be DELETED in source code. Students can decide whether or not to factor
+  ///         this element out in implementing makeQueuedBid()
+  /// Args:
+  ///   |id|  The UserId of the specified user.
+  ///   |bid|  The UserId of the specified user.
   func putBid(id: UserId, bid: Bid) : () {
     switch (userStates.get(id)) {
       case (null) Prelude.unreachable();
@@ -167,6 +214,12 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
+  /// Called by Users to queue a |bid|.
+  /// Args:
+  ///   |bid|  The Bid to be queued
+  /// Returns:
+  ///   A Result indicating if the bid was successfully queued
+  ///   (see "Error" in Types.mo for possible errors).
   public shared(msg) func makeQueuedBid(bid: Bid) : async (Result) {
     let seq = await getSeq(msg.caller);
     if (bid.seq >= seq) {
@@ -177,6 +230,10 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
+  /// Called by Users to process all the current bids stored in their UserState.
+  /// Returns:
+  ///   A Result indicating if the bids were successfully processed
+  ///   (see "Error" in Types.mo for possible errors).
   public shared(msg) func processBids() : async (Result) {
     switch (userStates.get(msg.caller)) {
       case (null) return #err(#userNotFound);
@@ -198,6 +255,13 @@ actor class App(balancesAddr: Principal) = App {
   // MODULE 4 EXERCISES //
   ////////////////////////
 
+  /// Adds the |hashedBid| to an auction's array of bids in HashedBids
+  /// Args:
+  ///   |auctionId|  The id of the auction.
+  ///   |hashedBid|  The hashed result of the bid to be submitted.
+  /// Returns:
+  ///   A Result indicating if the lock was successfully acquired
+  ///   (see "Error" in Types.mo for possible errors).
   public shared(msg) func makeHashedBid(
     auctionId: AuctionId,
     hashedBid: Hash.Hash
@@ -221,10 +285,24 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
+  /// Helper method used to create the hash of the BidProof.
+  /// Args:
+  ///   |bidProof|   The BidProof to be hashed (see Types.mo).
+  /// Returns:
+  ///   A Hash of the |salt| appended to the |amount|.
   func proofHash(bidProof: BidProof) : Hash.Hash {
     Text.hash(Nat.toText(bidProof.amount) # bidProof.salt)
   };
 
+  /// Helper method used in publishBidProof() to process bids once the bidder has chosen to publish their bid proof.
+  /// Args:
+  ///   |auctionId|   The AuctionId of the auction for which the bids belong to.
+  ///   |auction|     The Auction itself.
+  ///   |bidder|      The UserId of the bidder
+  ///   |amount|      The bid amount.
+  /// Returns:
+  ///   A Result indicating if the bids were successfully processed
+  ///   (see "Error" in Types.mo for possible errors).
   func processHashedBids(
     auctionId: AuctionId,
     auction: Auction,
@@ -254,6 +332,13 @@ actor class App(balancesAddr: Principal) = App {
     }
   };
 
+  /// Called by a user once an auction is over to "reveal" their bids
+  /// Args:
+  ///   |auctionId|  The id of the auction.
+  ///   |bidProof|   The BidProof to be published.
+  /// Returns:
+  ///   A Result indicating if the lock was successfully acquired
+  ///   (see "Error" in Types.mo for possible errors).
   public shared(msg) func publishBidProof(
     auctionId: AuctionId,
     bidProof: BidProof
@@ -317,18 +402,6 @@ actor class App(balancesAddr: Principal) = App {
       ttl = Time.now() + (3600 * 1000_000_000);
       lock = _owner;
       lock_ttl = 0;
-    }
-  };
-
-  func setNewLock(auction: Auction, lockAcquirer: UserId) : (Auction) {
-    {
-      owner = auction.owner;
-      item = auction.item;
-      highestBid = auction.highestBid;
-      highestBidder = auction.highestBidder;
-      ttl = auction.ttl;
-      lock = lockAcquirer;
-      lock_ttl = Time.now() + (3600 * 1000_000);
     }
   };
 

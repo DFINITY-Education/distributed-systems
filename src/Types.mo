@@ -9,16 +9,6 @@ module {
   public type UserId = Principal;
   public type Result = Result.Result<(), Error>;
 
-  public type Action = {
-    #makeBid: (bidder: Principal, auctionId: Nat, amount: Nat);
-    #startAuction: (
-      owner: UserId,
-      name: Text,
-      description: Text,
-      url: Text
-    );
-  };
-
   // Module 3
   public type Bid = {
     seq: Nat;
@@ -44,6 +34,7 @@ module {
     highestBid: Nat;
     highestBidder: ?UserId;
     ttl: Int;
+    // Module 2
     lock: UserId;
     lock_ttl: Int;
   };
@@ -76,10 +67,11 @@ module {
     #auctionNotFound;
     #auctionExpired;
     #userNotFound;
+    // Module 2
     #lockNotAcquired;
     #highestBidderNotPermitted;
+    // Module 3
     #seqOutOfOrder;
-
     // Module 4
     #auctionStillActive;
     #bidHashNotSubmitted;

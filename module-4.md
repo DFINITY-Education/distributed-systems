@@ -30,7 +30,17 @@ Let's jump to the **MODULE 4 EXERCISES** section in `App.mo` next, where you'll 
 
 **`makeHashedBid()`** accepts an `auctionId` and `hashedBid` and adds that bid to the auction's array of bids in `HashedBids`
 
+* Retrieve the `Auction` corresponding to the provided `auctionId`, returning `#auctionNotFound` if the auction doesn't exist.
+* Next, check that the current time isn't greater than the auctions's `ttl` - if it is, then the auction is over and you should return the `#auctionExpired` error
+* Finally, place the `hashedBid` in the array of `hashedBids`, returning `#ok` if successful
+
 **`publishBidProof()`** is a function users call once an auction is over to "reveal" their bids. They specify the `auctionId` and `bidProof`, which allows the bid to be verified
+
+* First, ensure that the auction isn't still active (based on its `ttl` and the current time) - if it is still active, then return the `#auctionStillActive` error.
+* Hash the `bidProof` using the `proofHash()` helper we've defined and determine if this hashed bid is in the array of `hashedBids` corresponding to the specified auction.
+  * Hint: The `find` [method](https://sdk.dfinity.org/docs/base-libraries/array#value.find) of `Array` (defined in Motoko Base library) may be helpful here. You will need to provide your own anonymous function that checks for element equality.
+* If you find the hashed bid, that means you've verified that bid was indeed placed. As a result, you can "process" the bid by calling `processHashedBids()` with the relevant information for this bid.
+  * If the hashed bid isn't found, return the `#bidHashNotSubmitted` error
 
 ### Deploying
 

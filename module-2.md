@@ -1,6 +1,6 @@
 # Module 2: Locks
 
-Before we foray into bid ordering, let's explore another issue related to distributed systems: near-simultaneous calls of a canister method by two different nodes. In our current open auction platform, users receive no guarantee that their bids will be accepted, even after the method is invoked. [Locking](https://www.geeksforgeeks.org/implementation-of-locking-in-dbms/#:~:text=Locking%20protocols%20are%20used%20in,is%20called%20as%20Lock%20Manager.) is often a method used in database management systems to ensure that a particular piece of data cannot be simultaneously modified by different processes.
+Before we foray into bid ordering, let's explore another issue related to distributed systems: near-simultaneous calls of a canister method by two different nodes. In our current open auction platform, users receive no guarantee that their bids will be accepted, even after the method is invoked. In this module, we will implement a feature called **locking** that helps to solve this issue. [Locking](https://www.geeksforgeeks.org/implementation-of-locking-in-dbms/#:~:text=Locking%20protocols%20are%20used%20in,is%20called%20as%20Lock%20Manager.) is often a method used in database management systems to ensure that a particular piece of data cannot be simultaneously modified by different processes.
 
  ## Your Task
 
@@ -16,7 +16,9 @@ We've modified the `Auction` type to maintain two more attributes: `lock`, repre
 
 #### `App.mo`
 
-`setNewLock` is a helper function that updates an `Auction`'s `lock` and `lock_ttl` fields fields once a lock is acquired. We call this helper in `acquireLock`.
+`setNewLock` is a helper function that updates an `Auction`'s `lock` and `lock_ttl` fields fields once a lock is acquired. We call this helper in `acquireLock`, which is one of the functions you will implement (more details in the specification section below).
+
+We've also modified the `setNewBidder()` helper (located in the **HELPER METHODS** section) to carry-over the newly added `lock` and `lock_ttl` fields of an `Auction`.
 
 ### Specification
 
@@ -24,9 +26,9 @@ We've modified the `Auction` type to maintain two more attributes: `lock`, repre
 
 **`acquireLock`** creates a "lock" in a user's name for a particular `Auction`. This prevents other bidders from bidding on the auction for a short period of time to ensure that the bidder who acquired the lock is successful in submitting their bid.
 
-* You must first retrieve the auction that's associated with the `id` parameter; if no such auction exists, return the `#auctionNotFound` error. 
-* Once you retrieve the auction, it's imperative that you also check that the user calling `acquireLock` is *not* currently the highest bidder in the specified `Auction`. Once a user has acquire a lock, we don't want them to be able to repeatedly acquire locks as a method of preventing other users from bidding - this solves that issue. If this is the case, return the `#highestBidderNotPermitted` error.
-* Finally, ensure that the current time is greater than `lock_ttl` time associated with the auction before implementing the lock for this bidder. This ensures that other users cannot acquire a lock if the prior bidder's lock "window" is still active (return the `#lockNotAcquired` error if this is the case).
+* It's imperative that you first check that the user calling `acquireLock` is *not* currently the highest bidder in the specified `Auction`. Once a user has acquire a lock, we don't want them to be able to repeatedly acquire locks as a method of preventing other users from bidding - this solves that issue. If this is the case, return the `#highestBidderNotPermitted` error.
+  * Hint: Note that the `highestBidder` field in our `Auction` type is an [optional](https://sdk.dfinity.org/docs/base-libraries/option) value. You may find the `Option.unwrap` method or a `switch` statement helpful.
+* Next, ensure that the current time is greater than `lock_ttl` time associated with the auction before implementing the lock for this bidder. This ensures that other users cannot acquire a lock if the prior bidder's lock "window" is still active (return the `#lockNotAcquired` error if this is the case).
   * Remember that the `setNewLock` helper method returns an updated `Auction` with the newly-set `lock` holder and `lock_ttl` field. Since `auctions` is just a HashMap, you can use the HashMap's `put` method to place the newly-created `Auction` from `setNewLock` in the place of the old auction (whose key is `auctionId`). Once successfully accomplished, you can return `#ok()` to signal that we've successfully acquired the lock for this user. 
   * Hint: You can access the current time with `Time.now()` (as is demonstrated in the `setNewLock` helper method)
   * Return the `#lockNotAcquired` error if the prior lock window is still active
