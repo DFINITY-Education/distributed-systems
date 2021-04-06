@@ -8,3 +8,9 @@
 # About
 
 In this course, students will learn the fundamentals of distributed systems programming by building on top of the open auction platform we previously created in the [Web Development](https://github.com/DFINITY-Education/web-development) section. **Module 1** serves as an intro to this unit, providing a primer for Distributed Systems by reviewing distribution transparency and distributed time. **Module 2** introduces students to the idea of "locking", borrowed from database management systems, which ensures that users cannot simultaneously bid on the same auction. In **Module 3**, students implement a feature that ensures bids are processed in the correct order. Finally, in **Module 4** students explore how they can maintain bid "secrecy" in a distributed system through the use of hashing.
+
+# Content
+The provided content was developed in collaboration with the following students:
+
+- [Nick Zoghb](https://www.linkedin.com/in/nickzoghb/), a graduate of University of California, Berkeley (2018) with a focus on Computer Science and Bioengineering
+- [Connor Solimano](https://www.linkedin.com/in/connor-solimano/), a student at Harvard College (2022) pursuing a degree in Computer Science and Economics
