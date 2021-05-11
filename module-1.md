@@ -24,8 +24,10 @@ We achieve the aforementioned distribution transparency through the [**Network N
 The NNS can add as many subsets as are needed to increase system capacity. Importantly, canisters hosted on different subnets can still communicate with each other, and this process is abstracted away for end users.
 
 <p align="center">
-  <img height="400" src="/images/nns-subnets.png">
+  <img height="300" src="/images/nns-subnets.png">
 </p>
+
+<p align="center"> <i>Subnets on the NNS</i></p>
 
 ### Replication and Consensus
 
@@ -35,7 +37,7 @@ State replication, however, introduces the issue of maintaining consistency. We 
 
 ### Canister Calls
 
-As we've previously discussed in other DFINITY Education resources, there are two distinct types of canister calls: query and update requests. **Query requests**, used only to access a canister's current state, don't go though the consensus algorithm and are therefore quite fast. **Update requests**, used to change the state of a canister, are processed through the consensus algorithm. As a result, replicas on different nodes must communicate with each other before the update is fully processed, making update calls take orders of magnitude longer than queries.
+As we've previously discussed in other DFINITY Education resources, there are two distinct types of canister calls: query and update requests. **Query requests**, used only to access a canister's current state, don't go through the consensus algorithm and are therefore quite fast. **Update requests**, used to change the state of a canister, are processed through the consensus algorithm. As a result, replicas on different nodes must communicate with each other before the update is fully processed, making update calls take orders of magnitude longer than queries.
 
 ## Distributed Time
 
@@ -48,10 +50,10 @@ Imagine, for instance, that there are two nodes, A and B (pictured below), and n
 If we know the relative times that each message was sent and received (T1-T4), and we assume that sending a message from A to B takes the same amount of time as sending a message from B to A, then we can calculate the difference in internal clock times between A and B.
 
 <p align="center">
-  <img height="350" src="/images/Time-sync.png">
+  <img height="300" src="/images/Time-sync.png">
 </p>
 
-*M. van Steen and A.S. Tanenbaum, Distributed Systems, 3rd ed., distributed-systems.net, 2017.*
+<p align="center"> <i>Source: M. van Steen and A.S. Tanenbaum, Distributed Systems, 3rd ed., distributed-systems.net, 2017.</i></p>
 
 ### Event Ordering
 
@@ -66,6 +68,7 @@ In a distributed system like the one seen below, we require some notion of **eve
 <p align="center">
   <img height="250" src="/images/event-order.png">
 </p>
+<p align="center"> <i>Source: M. van Steen and A.S. Tanenbaum, Distributed Systems, 3rd ed., distributed-systems.net, 2017.</i></p>
 
 ### Logical Clocks
 
