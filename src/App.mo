@@ -16,7 +16,6 @@ import Types "./Types";
 
 actor class App(balancesAddr: Principal) = App {
 
-  type Action = Types.Action;
   type Auction = Types.Auction;
   type AuctionId = Types.AuctionId;
   type Bid = Types.Bid;
