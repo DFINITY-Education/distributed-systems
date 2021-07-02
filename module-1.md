@@ -17,7 +17,7 @@ This module provides an overview of distributed systems, their role in the Inter
 
 Although the Internet Computer is composed of many individual data centers, the end user doesn't see these low-level system details. Instead, the IC is designed such that end users view and interact with the system as a single, large computing platform. This process, called **distribution transparency**, means that end users need not worry about where computations take place, how data is stored, or whether data is replicated across nodes.  
 
-### Network Nervous System
+### [**Network Nervous System**](https://medium.com/dfinity/the-network-nervous-system-governing-the-internet-computer-1d176605d66a)
 
 We achieve the aforementioned distribution transparency through the [**Network Nervous System (NNS)**](https://medium.com/dfinity/a-technical-overview-of-the-internet-computer-f57c62abc20f#313b), a group of nodes that are responsible for controlling, configuring, and managing the network. The NNS has the ability to create [**Subnets**](https://medium.com/dfinity/a-technical-overview-of-the-internet-computer-f57c62abc20f#7bbc), which are responsible for hosting a small subset of canisters on the IC. Each subnet brings together node machines from different data centers, which are responsible for data replication and communicate via the ICP. 
 
