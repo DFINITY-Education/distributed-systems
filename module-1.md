@@ -61,7 +61,7 @@ Usually, agreeing on the exact time isn't as important on agreeing on the order 
 
 Although both replicas started in the same state, they would end up with different balances if these transactions were processed in the order of arrival. Namely, if both accounts started with $1000, then Replica 1 would have $1111 (($1000 + $100) * 1.01) while Replica 2 would have $1110 (($1000 * 1.01) + $100).
 
-In a distributed system like the one seen below, we require some notion of **event ordering** to ensure that updates are processed in *every* replica in the exact order they were submitted. 
+In a distributed system like the one seen below, we require some notion of **event ordering** to ensure that updates are processed in *every* replica in the exact same as in other replicas. 
 
 
 
@@ -72,6 +72,6 @@ In a distributed system like the one seen below, we require some notion of **eve
 
 ### Logical Clocks
 
-To solve the issue of event ordering in distributed system, we need to establish a system of logical clocks that keeps track of events across different replicas. Two commonly used systems are **Lamport Clocks** and **Vector Clocks**. In Lamport Clocks, each process (or replica) maintains a counter used to assign timestamps. This counter is incremented each time an event is given a timestamp. Vector clocks build upon the mechanics of Lamport clocks, but they maintain a vector of timestamps instead of just one single counter. This allows us to establish **causality** of message ordering, making Vector Clocks a more powerful tool than Lamport Clocks in keeping track of distributed time. 
+To solve the issue of event ordering in distributed system, we need to establish a system of logical clocks that keeps track of events across different replicas. Two commonly used systems are **Lamport Clocks** and **Vector Clocks**. In Lamport Clocks, each process (or replica) maintains a counter used to assign timestamps. This counter is incremented each time an event is given a timestamp. The counter value is then sent along with the corresponding message to other replicas. When receiving a message, a replica updates its local counter value to the greater of its current value and the received value. This provides partial ordering of events with minimal overhead. Vector clocks build upon the mechanics of Lamport clocks, but they maintain a vector of timestamps instead of just one single counter. This allows us to establish **causality** of message ordering, making Vector Clocks a more powerful tool than Lamport Clocks in keeping track of distributed time. 
 
 Please take a moment to read an explanation of [Lamport and Vector Timestamps](https://www.cs.rutgers.edu/~pxk/417/notes/logical-clocks.html) by Rutgers professor Paul Krzyzanowski to develop a more technical understanding of these two systems. We ultimately will build upon this knowledge in subsequent modules. 
